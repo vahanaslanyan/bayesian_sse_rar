@@ -1,0 +1,1136 @@
+---
+title: "Bayesian Sample Size simulations"
+author: "Vahan Aslanyan"
+format: pdf
+editor: visual
+---
+
+# Lecanemab
+
+From study protocol:
+
+"The sample size for this study is estimated based on comparison of BAN2401 versus placebo with respect to the primary efficacy endpoint, the change from baseline in CDR-SB at 18 months. Based on data from BAN2401 Phase 2 study BAN2401-G000-201, an estimated standard deviation of the change from baseline CDR-SB at 18 months in placebo is 2.031 and an estimated treatment difference is 0.373 in all subjects. Therefore, assuming an estimated 20% dropout rate at 18 months in this study, a total sample size of 1566 subjects, including 783 subjects in placebo and 783 subjects in BAN2401, will have 90% power to detect the treatment difference between BAN2401 and placebo in all subjects using a 2-sample t-test at a significance level of 2-sided alpha = 0.05."
+
+From sample size rationale: sd=2.031 variance is 4.124961, so nu_prior is 0.2424265 , so alpha/beta is 0.2424265
+
+From collected data: SE=0.1122449 N=1795 , so SD=4.755529 (SE\*sqrt(N)), Mean Change=0.45, so treatment effect size is 0.0946267
+
+```{r,message=FALSE}
+set.seed(219)
+source("bayesian_ssr.R")
+
+```
+
+```{r}
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+alpha<-1:10000
+beta<-round(alpha/0.2424265)
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1, 
+                               eta=0.95,zeta=0.90,xi=0.95,r=c(0.5,0.5),
+                               q_prior=c(1,1),delta_star=0.373)
+  if(any(is.na(aux)))next
+  yE_aux=rnorm(round(aux$treatment1/2),mean=0.45, sd=4.755529)
+  yC_aux=rnorm(round(aux$treatment2/2),mean=0, sd=4.755529)
+  y=c(yC_aux,yE_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/2)),
+                          rep(2,round(aux$treatment2/2)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(0.5,0.5),mu_prior =c(0,0),
+                                   N_treat = c(round(aux$treatment1/2),
+                                               round(aux$treatment2/2)),
+                                   y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,
+                               aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,
+                                  aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation<-rbind(interim_allocation,new_r)
+}
+
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(df_sample_size)
+
+```
+
+```{r}
+
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(0.5,0.5),
+                                       q_prior =as.numeric(df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.373)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+
+```
+
+```{r}
+
+
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.373)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+```{r}
+colMeans(interim_allocation)
+```
+
+# Whitehead et al. 2015
+
+Taken from
+
+Carlsen JE, Køber L, Torp-Pedersen C, Johansen P. Relation between dose of bendrofluazide, antihypertensive effect, andadverse biochemical effects.British Medical Journal1990;300:975--978.
+
+```{r}
+alpha<-1:10000
+beta<-round(alpha/0.0204)
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1, 
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/3,1/6,1/6,1/6,1/6),
+                               q_prior=c(10,2,2,2,2),delta_star=5)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/2),mean=2.8, sd=12.3)
+  y2_aux=rnorm(round(aux$treatment2/2),mean=12.7, sd=14.1)
+  y3_aux=rnorm(round(aux$treatment3/2),mean=14.3, sd=11.5)
+  y4_aux=rnorm(round(aux$treatment4/2),mean=13.4, sd=14.4)
+  y5_aux=rnorm(round(aux$treatment5/2),mean=17, sd=15)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux,y5_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/2)),
+                          rep(2,round(aux$treatment2/2)),
+                          rep(3,round(aux$treatment3/2)),
+                          rep(4,round(aux$treatment4/2)),
+                          rep(5,round(aux$treatment5/2)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(10,2,2,2,2),
+                                   N_treat = c(round(aux$treatment1/2),
+                                               round(aux$treatment2/2),
+                                               round(aux$treatment3/2),
+                                               round(aux$treatment4/2),
+                                               round(aux$treatment5/2)),
+                                   y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,
+                               aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,
+                                  aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                     beta_prior = df_alpha_beta_posteriors$beta_posterior[i],
+                                     eta=0.95, zeta=0.90,xi=0.95,
+                                     r=c(1/3,1/6,1/6,1/6,1/6),
+                                     q_prior =as.numeric(df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                     delta_star=5)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i],
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=5)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+
+
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+# Hypothetical Scenario #1
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.2. One interim analysis at 50% recruited
+
+```{r}
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.2)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/2),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/2),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/2),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/2),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/2)),
+                          rep(2,round(aux$treatment2/2)),
+                          rep(3,round(aux$treatment3/2)),
+                          rep(4,round(aux$treatment4/2)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat = c(round(aux$treatment1/2),
+                                               round(aux$treatment2/2),
+                                               round(aux$treatment3/2),
+                                               round(aux$treatment4/2)),
+                                               y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+# Hypothetical Scenario #2
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.2. One interim analysis at 25% recruited
+
+```{r}
+
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.2)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/4),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/4),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/4),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/4)),
+                          rep(2,round(aux$treatment2/4)),
+                          rep(3,round(aux$treatment3/4)),
+                          rep(4,round(aux$treatment4/4)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat=c(round(aux$treatment1/4),
+                                             round(aux$treatment2/4),
+                                             round(aux$treatment3/4),
+                                             round(aux$treatment4/4)),
+                                   y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences,n=1,N=4)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i],
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+# Hypothetical Scenario #3
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.2. One interim analysis at 12.5% recruited
+
+```{r}
+
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.2)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/8),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/8),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/8),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/8),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/8)),
+                          rep(2,round(aux$treatment2/8)),
+                          rep(3,round(aux$treatment3/8)),
+                          rep(4,round(aux$treatment4/8)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat=c(round(aux$treatment1/8),
+                                             round(aux$treatment2/8),
+                                             round(aux$treatment3/8),
+                                             round(aux$treatment4/8)),
+                                   y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences,n=1,N=8)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i],
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+# Hypothetical Scenario #4
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.3. One interim analysis at 50% recruited
+
+```{r}
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.3)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/2),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/2),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/2),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/2),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/2)),
+                          rep(2,round(aux$treatment2/2)),
+                          rep(3,round(aux$treatment3/2)),
+                          rep(4,round(aux$treatment4/2)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat = c(round(aux$treatment1/2),
+                                               round(aux$treatment2/2),
+                                               round(aux$treatment3/2),
+                                               round(aux$treatment4/2)),
+                                               y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+# Hypothetical Scenario #5
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.3. One interim analysis at 25% recruited
+
+```{r}
+
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.3)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/4),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/4),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/4),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/4)),
+                          rep(2,round(aux$treatment2/4)),
+                          rep(3,round(aux$treatment3/4)),
+                          rep(4,round(aux$treatment4/4)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat=c(round(aux$treatment1/4),
+                                             round(aux$treatment2/4),
+                                             round(aux$treatment3/4),
+                                             round(aux$treatment4/4)),
+                                   y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences,n=1,N=4)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i],
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+# Hypothetical Scenario #6
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.3. One interim analysis at 12.5% recruited
+
+```{r}
+
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation<-tibble()
+
+
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.3)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/8),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/8),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/8),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/8),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/8)),
+                          rep(2,round(aux$treatment2/8)),
+                          rep(3,round(aux$treatment3/8)),
+                          rep(4,round(aux$treatment4/8)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat=c(round(aux$treatment1/8),
+                                             round(aux$treatment2/8),
+                                             round(aux$treatment3/8),
+                                             round(aux$treatment4/8)),
+                                   y_treatment = df)
+  df_q_andmu_posteriors<-rbind(df_q_andmu_posteriors,aux_post$q_andmu_posteriors)
+  df_alpha_beta_posteriors<-rbind(df_alpha_beta_posteriors,aux_post$alpha_beta_params)
+  df_D_posteriors<-rbind(df_D_posteriors,aux_post$D)
+  df_sample_size<-rbind(df_sample_size,aux)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences,n=1,N=8)
+  interim_allocation<-rbind(interim_allocation,new_r)
+  #df_posteriors<-rbind(df_posteriors,aux_post)
+}
+colMeans(df_sample_size)
+```
+
+```{r}
+interim_ss<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i],
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss<-rbind(interim_ss,interim_aux)
+}
+
+colMeans(interim_ss)
+```
+
+```{r}
+colnames(interim_allocation)<-paste0("r", seq_along(new_r))
+colMeans(interim_allocation)
+```
+
+```{r}
+interim_ss_rar<-tibble()
+for(i in 1:nrow(df_sample_size)){
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors$alpha_posterior[i],
+                                       beta_prior = df_alpha_beta_posteriors$beta_posterior[i], 
+                                       eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=as.numeric(interim_allocation[i,]),
+                                       q_prior =as.numeric( df_q_andmu_posteriors[i,grep("q",colnames(df_q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss_rar<-rbind(interim_ss_rar,interim_aux)
+}
+
+colMeans(interim_ss_rar,na.rm = T)
+```
+
+# Hypothetical Scenario #7
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.2. One interim analysis at 25% recruited another at 50% recruited
+
+```{r}
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation_1<-tibble()
+interim_ss_rar_1<-tibble()
+interim_allocation_2<-tibble()
+interim_ss_rar_2<-tibble()
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.2)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/4),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/4),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/4),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/4)),
+                          rep(2,round(aux$treatment2/4)),
+                          rep(3,round(aux$treatment3/4)),
+                          rep(4,round(aux$treatment4/4)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat = c(round(aux$treatment1/4),
+                                               round(aux$treatment2/4),
+                                               round(aux$treatment3/4),
+                                               round(aux$treatment4/4)),
+                                               y_treatment = df)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation_1<-rbind(interim_allocation_1,new_r)
+  df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+  interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss_rar_1<-rbind(interim_ss_rar_1,interim_aux)
+  if(any(is.na(interim_aux)))next
+  y1_aux=rnorm(max(round((interim_aux$treatment1/2-aux$treatment1/4)),1),mean=0, sd=1)
+  y2_aux=rnorm(max(round((interim_aux$treatment2/2-aux$treatment2/4)),1),mean=0.1, sd=1)
+  y3_aux=rnorm(max(round((interim_aux$treatment3/2-aux$treatment3/4)),1),mean=0.2, sd=1)
+  y4_aux=rnorm(max(round((interim_aux$treatment4/2-aux$treatment4/4)),1),mean=0.6, sd=1)
+  y_aux=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,max(round((interim_aux$treatment1/2-aux$treatment1/4)),1)),
+                          rep(2,max(round((interim_aux$treatment2/2-aux$treatment2/4)),1)),
+                          rep(3,max(round((interim_aux$treatment3/2-aux$treatment3/4)),1)),
+                          rep(4,max(round((interim_aux$treatment4/2-aux$treatment4/4)),1)))
+   df_aux=tibble(treatment_assignment,y=y_aux)
+   df<-rbind(df,df_aux)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   aux_post<-posterior_calculations(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior,
+                                   q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                   mu_prior= as.numeric( df_q_andmu_posteriors[,grep("mu",colnames(aux_post$q_andmu_posteriors)),]),
+                                   N_treat = c(round(interim_aux$treatment1/2),
+                                               round(interim_aux$treatment2/2),
+                                               round(interim_aux$treatment3/2),
+                                               round(interim_aux$treatment4/2)),
+                                               y_treatment = df)
+    treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+   new_r<-allocation_calculation(treatment_differences)
+   interim_allocation_2<-rbind(interim_allocation_2,new_r)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+   interim_ss_rar_2<-rbind(interim_ss_rar_2,interim_aux)
+}
+colMeans(interim_ss_rar_2,na.rm = T)
+```
+
+# Hypothetical Scenario #8
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.3. One interim analysis at 25% recruited another at 50% recruited
+
+```{r}
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation_1<-tibble()
+interim_ss_rar_1<-tibble()
+interim_allocation_2<-tibble()
+interim_ss_rar_2<-tibble()
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.3)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/4),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/4),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/4),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/4)),
+                          rep(2,round(aux$treatment2/4)),
+                          rep(3,round(aux$treatment3/4)),
+                          rep(4,round(aux$treatment4/4)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat = c(round(aux$treatment1/4),
+                                               round(aux$treatment2/4),
+                                               round(aux$treatment3/4),
+                                               round(aux$treatment4/4)),
+                                               y_treatment = df)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation_1<-rbind(interim_allocation_1,new_r)
+  df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+  interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss_rar_1<-rbind(interim_ss_rar_1,interim_aux)
+  if(any(is.na(interim_aux)))next
+  y1_aux=rnorm(max(round((interim_aux$treatment1/2-aux$treatment1/4)),1),mean=0, sd=1)
+  y2_aux=rnorm(max(round((interim_aux$treatment2/2-aux$treatment2/4)),1),mean=0.1, sd=1)
+  y3_aux=rnorm(max(round((interim_aux$treatment3/2-aux$treatment3/4)),1),mean=0.2, sd=1)
+  y4_aux=rnorm(max(round((interim_aux$treatment4/2-aux$treatment4/4)),1),mean=0.6, sd=1)
+  y_aux=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,max(round((interim_aux$treatment1/2-aux$treatment1/4)),1)),
+                          rep(2,max(round((interim_aux$treatment2/2-aux$treatment2/4)),1)),
+                          rep(3,max(round((interim_aux$treatment3/2-aux$treatment3/4)),1)),
+                          rep(4,max(round((interim_aux$treatment4/2-aux$treatment4/4)),1)))
+   df_aux=tibble(treatment_assignment,y=y_aux)
+   df<-rbind(df,df_aux)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   aux_post<-posterior_calculations(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior,
+                                   q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                   mu_prior= as.numeric( df_q_andmu_posteriors[,grep("mu",colnames(aux_post$q_andmu_posteriors)),]),
+                                   N_treat = c(round(interim_aux$treatment1/2),
+                                               round(interim_aux$treatment2/2),
+                                               round(interim_aux$treatment3/2),
+                                               round(interim_aux$treatment4/2)),
+                                               y_treatment = df)
+    treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+   new_r<-allocation_calculation(treatment_differences)
+   interim_allocation_2<-rbind(interim_allocation_2,new_r)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+   interim_ss_rar_2<-rbind(interim_ss_rar_2,interim_aux)
+}
+colMeans(interim_ss_rar_2,na.rm = T)
+```
+
+
+# Hypothetical Scenario #9
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.3. One interim analysis at 25% recruited another at 75% recruited
+
+```{r}
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation_1<-tibble()
+interim_ss_rar_1<-tibble()
+interim_allocation_2<-tibble()
+interim_ss_rar_2<-tibble()
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.3)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/4),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/4),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/4),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/4)),
+                          rep(2,round(aux$treatment2/4)),
+                          rep(3,round(aux$treatment3/4)),
+                          rep(4,round(aux$treatment4/4)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat = c(round(aux$treatment1/4),
+                                               round(aux$treatment2/4),
+                                               round(aux$treatment3/4),
+                                               round(aux$treatment4/4)),
+                                               y_treatment = df)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation_1<-rbind(interim_allocation_1,new_r)
+  df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+  interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+  interim_ss_rar_1<-rbind(interim_ss_rar_1,interim_aux)
+  if(any(is.na(interim_aux)))next
+  y1_aux=rnorm(max(round((interim_aux$treatment1*0.75-aux$treatment1/4)),1),mean=0, sd=1)
+  y2_aux=rnorm(max(round((interim_aux$treatment2*0.75-aux$treatment2/4)),1),mean=0.1, sd=1)
+  y3_aux=rnorm(max(round((interim_aux$treatment3*0.75-aux$treatment3/4)),1),mean=0.2, sd=1)
+  y4_aux=rnorm(max(round((interim_aux$treatment4*0.75-aux$treatment4/4)),1),mean=0.6, sd=1)
+  y_aux=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,max(round((interim_aux$treatment1*0.75-aux$treatment1/4)),1)),
+                          rep(2,max(round((interim_aux$treatment2*0.75-aux$treatment2/4)),1)),
+                          rep(3,max(round((interim_aux$treatment3*0.75-aux$treatment3/4)),1)),
+                          rep(4,max(round((interim_aux$treatment4*0.75-aux$treatment4/4)),1)))
+   df_aux=tibble(treatment_assignment,y=y_aux)
+   df<-rbind(df,df_aux)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   aux_post<-posterior_calculations(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior,
+                                   q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                   mu_prior= as.numeric( df_q_andmu_posteriors[,grep("mu",colnames(aux_post$q_andmu_posteriors)),]),
+                                   N_treat = c(round(interim_aux$treatment1*0.75),
+                                               round(interim_aux$treatment2*0.75),
+                                               round(interim_aux$treatment3*0.75),
+                                               round(interim_aux$treatment4*0.75)),
+                                               y_treatment = df)
+    treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+   new_r<-allocation_calculation(treatment_differences)
+   interim_allocation_2<-rbind(interim_allocation_2,new_r)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.3)
+   interim_ss_rar_2<-rbind(interim_ss_rar_2,interim_aux)
+}
+colMeans(interim_ss_rar_2,na.rm = T)
+```
+
+
+# Hypothetical Scenario #10
+
+Treatment effects 0, 0.1, 0.2, 0.6, clinically relevant difference is 0.2. One interim analysis at 25% recruited another at 75% recruited
+
+```{r}
+
+alpha<-1:10000
+beta<-alpha
+df_sample_size<-tibble()
+df_posteriors<-tibble()
+df_q_andmu_posteriors<-tibble()
+df_alpha_beta_posteriors<-tibble()
+df_D_posteriors<-tibble()
+interim_allocation_1<-tibble()
+interim_ss_rar_1<-tibble()
+interim_allocation_2<-tibble()
+interim_ss_rar_2<-tibble()
+for(i in 1:1000){
+  alpha1<-sample(alpha,1)
+  beta1<-beta[alpha1==alpha]
+  aux<-sample_size_calculation(alpha_prior = alpha1,beta_prior = beta1,
+                               eta=0.95, zeta=0.90, 
+                               xi=0.95,r=c(1/4,1/4,1/4,1/4),
+                               q_prior=c(2,2,2,2),delta_star=0.2)
+  if(any(is.na(aux)))next
+  y1_aux=rnorm(round(aux$treatment1/4),mean=0, sd=1)
+  y2_aux=rnorm(round(aux$treatment2/4),mean=0.1, sd=1)
+  y3_aux=rnorm(round(aux$treatment3/4),mean=0.2, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,round(aux$treatment1/4)),
+                          rep(2,round(aux$treatment2/4)),
+                          rep(3,round(aux$treatment3/4)),
+                          rep(4,round(aux$treatment4/4)))
+  df=tibble(treatment_assignment,y)
+  aux_post<-posterior_calculations(alpha_prior=alpha1,beta_prior=beta1,
+                                   q_prior=c(2,2,2,2),mu_prior=c(0,0,0,0),
+                                   N_treat = c(round(aux$treatment1/4),
+                                               round(aux$treatment2/4),
+                                               round(aux$treatment3/4),
+                                               round(aux$treatment4/4)),
+                                               y_treatment = df)
+  treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+  new_r<-allocation_calculation(treatment_differences)
+  interim_allocation_1<-rbind(interim_allocation_1,new_r)
+  df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+  interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+  interim_ss_rar_1<-rbind(interim_ss_rar_1,interim_aux)
+  if(any(is.na(interim_aux)))next
+  y1_aux=rnorm(max(round((interim_aux$treatment1*0.75-aux$treatment1/4)),1),mean=0, sd=1)
+  y2_aux=rnorm(max(round((interim_aux$treatment2*0.75-aux$treatment2/4)),1),mean=0.1, sd=1)
+  y3_aux=rnorm(max(round((interim_aux$treatment3*0.75-aux$treatment3/4)),1),mean=0.2, sd=1)
+  y4_aux=rnorm(max(round((interim_aux$treatment4*0.75-aux$treatment4/4)),1),mean=0.6, sd=1)
+  y_aux=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,max(round((interim_aux$treatment1*0.75-aux$treatment1/4)),1)),
+                          rep(2,max(round((interim_aux$treatment2*0.75-aux$treatment2/4)),1)),
+                          rep(3,max(round((interim_aux$treatment3*0.75-aux$treatment3/4)),1)),
+                          rep(4,max(round((interim_aux$treatment4*0.75-aux$treatment4/4)),1)))
+   df_aux=tibble(treatment_assignment,y=y_aux)
+   df<-rbind(df,df_aux)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   aux_post<-posterior_calculations(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior,
+                                   q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                   mu_prior= as.numeric( df_q_andmu_posteriors[,grep("mu",colnames(aux_post$q_andmu_posteriors)),]),
+                                   N_treat = c(round(interim_aux$treatment1*0.75),
+                                               round(interim_aux$treatment2*0.75),
+                                               round(interim_aux$treatment3*0.75),
+                                               round(interim_aux$treatment4*0.75)),
+                                               y_treatment = df)
+    treatment_differences<-get_treatment_difference(aux_post$q_andmu_posteriors,
+                                                  aux_post$D,
+                                                  aux_post$alpha_beta_params)
+   new_r<-allocation_calculation(treatment_differences)
+   interim_allocation_2<-rbind(interim_allocation_2,new_r)
+   df_q_andmu_posteriors<-aux_post$q_andmu_posteriors
+   interim_aux<-sample_size_calculation(alpha_prior =aux_post$alpha_beta_params$alpha_posterior,
+                                       beta_prior = aux_post$alpha_beta_params$beta_posterior, 
+                                       eta=0.95, zeta=0.90,xi=0.95,
+                                       r=new_r,
+                                       q_prior =as.numeric( df_q_andmu_posteriors[,grep("q",colnames(aux_post$q_andmu_posteriors)),]),
+                                       delta_star=0.2)
+   interim_ss_rar_2<-rbind(interim_ss_rar_2,interim_aux)
+}
+colMeans(interim_ss_rar_2,na.rm = T)
+```
