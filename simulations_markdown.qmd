@@ -292,6 +292,8 @@ for(i in 1:length(alpha)){
 }
 colMeans(interim_ss_rar50)
 ```
+
+
 ```{r}
 interim_ss_rar25<-tibble()
 df_sample_size<-tibble()
@@ -1048,6 +1050,7 @@ for(i in 1:length(alpha)){
 }
 colMeans(interim_ss_rar50)
 ```
+
 ```{r}
 interim_ss_rar25<-tibble()
 df_sample_size<-tibble()
@@ -1428,7 +1431,7 @@ interim_allocation_25<-tibble()
 
 
 
-for(i in 1:length(alpha)){
+for(i in 3:length(alpha)){
   aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/2,1/2),q_prior=c(1,1),delta_star=0.373)
   if(any(is.na(aux)))next
   df_sample_size<-rbind(df_sample_size,aux)
@@ -1473,9 +1476,7 @@ for(i in 1:length(alpha)){
   df<-rbind(df_25,df_75)
   aux_post_75<-posterior_calculations(alpha_prior=alpha[i],beta_prior=beta[i],q_prior=c(1,1),mu_prior=c(0,0),
                                    N_treat = c(max(round(aux$treatment1/4),round(interim_aux$treatment1*0.75)),
-                                               max(round(aux$treatment2/4),round(interim_aux$treatment2*0.75)),
-                                               max(round(aux$treatment3/4),round(interim_aux$treatment3*0.75)),
-                                               max(round(aux$treatment4/4),round(interim_aux$treatment4*0.75))),
+                                               max(round(aux$treatment2/4),round(interim_aux$treatment2*0.75))),
                                    y_treatment = df)
   
   df_q_andmu_posteriors_75<-aux_post_75$q_andmu_posteriors
@@ -1619,7 +1620,6 @@ for(i in 1:length(alpha)){
 colMeans(df_sample_size)
 ```
 
-<<<<<<< HEAD
 ```{r}
 #no RAR
 interim_ss50<-tibble()
@@ -1631,10 +1631,6 @@ for(i in 1:nrow(df_alpha_beta_posteriors_50)){
 }
 
 colMeans(interim_ss50)
-=======
-# Hypothetical Scenario #9
->>>>>>> bf43f33729082aac7385f4ad1fea921748ff11cb
-
 ```
 
 ```{r}
