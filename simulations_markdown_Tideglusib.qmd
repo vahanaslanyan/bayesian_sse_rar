@@ -1,5 +1,6 @@
 ---
-title: "Simulations"
+title: "Tideglusib"
+author: "Vahan Aslanyan"
 format: pdf
 editor: visual
 ---
@@ -9,12 +10,17 @@ set.seed(219)
 source("bayesian_ssr.R")
 ```
 
-## Scenario 1-5
+# Tideglusib
+
+"A previous pilot study had shown a clinically relevant difference between active and placebo arms \[25\] of 4.7 point (SD 7.3) in ADAS-cog15, equivalent to the expected natural decline for 6 months \[30\]. Power calculations showed that a sample of 280 patients (40 patients in the 500 mgQDarm and 80 in the other treatment arms), assuming a 30% drop-out rate, provided 90% statistical power to detect a 4.5 point difference in the ADAS-cog15 between each treatment and placebo group according to standard formulae based on Student's t-test."
+
+From the paper, SD=7.3 =\>variance=53.29 so precision is 0.01876525 so alpha/beta is 0.01876525. Clinically meaningful difference is 4.5/7.3=0.6164384 From table 2, placebo has parameters 1.7, 6.9 sd; trt 1 0.2, 6.7; trt2 1.4, 6.6; trt3 2.6 and 7.4.
+
+### Scenario 21-25
 
 ```{r}
-
-alpha<-runif(5000,0,1000)
-beta<-alpha
+alpha<-runif(5000,0,20)
+beta<-alpha/0.01876525
 df_sample_size<-tibble()
 
 df_q_andmu_posteriors_50<-tibble()
@@ -33,18 +39,18 @@ df_D_posteriors_125<-tibble()
 interim_allocation_125<-tibble()
 
 for(i in 1:length(alpha)){
-  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.1)
+  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.6164384)
   if(any(is.na(aux)))next
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 1
   length1<-round(aux$treatment1/2)
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-round(aux$treatment2/2)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-round(aux$treatment3/2)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-round(aux$treatment4/2)
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -64,14 +70,14 @@ for(i in 1:length(alpha)){
 
   #Scenario 2
   
-  length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=0, sd=1)
+ length1<-round(aux$treatment1/4)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-round(aux$treatment4/4)
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -93,14 +99,14 @@ for(i in 1:length(alpha)){
   
   #Scenario 3
   
-  length1<-round(aux$treatment1/8)
-  y1_aux=rnorm(length1,mean=0, sd=1)
+ length1<-round(aux$treatment1/8)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-round(aux$treatment2/8)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-round(aux$treatment3/8)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-round(aux$treatment4/8)
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -122,34 +128,38 @@ for(i in 1:length(alpha)){
 }
 colMeans(df_sample_size)
 ```
-### Scenario 1 no RAR
+
+### Scenario 21 no RAR
+
 ```{r}
 #no RAR
 interim_ss50<-tibble()
 for(i in 1:nrow(df_alpha_beta_posteriors_50)){
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_50$alpha_posterior[i],beta_prior = df_alpha_beta_posteriors_50$beta_posterior[i], eta=0.95, zeta=0.90, 
                                        xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_50[i,grep("q",colnames(df_q_andmu_posteriors_50)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   interim_ss50<-rbind(interim_ss50,interim_aux)
 }
 
 colMeans(interim_ss50)
-
 ```
-### Scenario 1 RAR
+
+### Scenario 21 RAR
+
 ```{r}
 
 interim_ss_rar50<-tibble()
 for(i in 1:nrow(df_alpha_beta_posteriors_50)){
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_50$alpha_posterior[i],beta_prior = df_alpha_beta_posteriors_50$beta_posterior[i], eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(interim_allocation_50[i,]),q_prior =as.numeric( df_q_andmu_posteriors_50[i,grep("q",colnames(df_q_andmu_posteriors_50)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   interim_ss_rar50<-rbind(interim_ss_rar50,interim_aux)
 }
 
 colMeans(interim_ss_rar50,na.rm = T)
 ```
-### Scenario 2 no RAR
+
+### Scenario 22 no RAR
 
 ```{r}
 #no RAR
@@ -157,52 +167,58 @@ interim_ss25<-tibble()
 for(i in 1:nrow(df_alpha_beta_posteriors_25)){
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior[i],beta_prior = df_alpha_beta_posteriors_25$beta_posterior[i], eta=0.95, zeta=0.90, 
                                        xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_25[i,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   interim_ss25<-rbind(interim_ss25,interim_aux)
 }
 
 colMeans(interim_ss25)
 ```
-### Scenario 2 RAR
+
+### Scenario 22 RAR
+
 ```{r}
 interim_ss_rar25<-tibble()
 for(i in 1:nrow(df_alpha_beta_posteriors_25)){
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior[i],beta_prior = df_alpha_beta_posteriors_25$beta_posterior[i], eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(interim_allocation_25[i,]),q_prior =as.numeric( df_q_andmu_posteriors_25[i,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   interim_ss_rar25<-rbind(interim_ss_rar25,interim_aux)
 }
 
 colMeans(interim_ss_rar25,na.rm = T)
 ```
 
-### Scenario 3 no RAR 
+### Scenario 23 no RAR
+
 ```{r}
 #no RAR
 interim_ss125<-tibble()
 for(i in 1:nrow(df_alpha_beta_posteriors_125)){
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_125$alpha_posterior[i],beta_prior = df_alpha_beta_posteriors_125$beta_posterior[i], eta=0.95, zeta=0.90, 
                                        xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_125[i,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   interim_ss125<-rbind(interim_ss125,interim_aux)
 }
 
 colMeans(interim_ss125)
 ```
-### Scenario 3 RAR
+
+### Scenario 23 RAR
+
 ```{r}
 interim_ss_rar125<-tibble()
 for(i in 1:nrow(df_alpha_beta_posteriors_125)){
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_125$alpha_posterior[i],beta_prior = df_alpha_beta_posteriors_125$beta_posterior[i], eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(interim_allocation_125[i,]),q_prior =as.numeric( df_q_andmu_posteriors_125[i,grep("q",colnames(df_q_andmu_posteriors_125)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   interim_ss_rar125<-rbind(interim_ss_rar125,interim_aux)
 }
 
 colMeans(interim_ss_rar125,na.rm = T)
 ```
 
-### Scenario 4 RAR
+### Scenario 24 RAR
+
 ```{r}
 interim_ss_rar25<-tibble()
 df_sample_size<-tibble()
@@ -220,20 +236,18 @@ interim_allocation_25<-tibble()
 
 
 for(i in 1:length(alpha)){
-  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.1)
+  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.6164384)
   if(any(is.na(aux)))next
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
-  length4<-round(aux$treatment2/4)
-  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
-  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
-  
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  length4<-round(aux$treatment4/4)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
                           rep(3,length3),rep(4,length4))
   df_25=tibble(treatment_assignment,y)
@@ -252,20 +266,20 @@ for(i in 1:length(alpha)){
   
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior ,beta_prior = df_alpha_beta_posteriors_25$beta_posterior, eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   if(any(is.na(interim_aux)))next
   interim_ss_rar25<-rbind(interim_ss_rar25,interim_aux)
   
 
   #Scenario 4
   length1<-max(0,round(interim_aux$treatment1/2-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-max(0,round(interim_aux$treatment2/2-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-max(0,round(interim_aux$treatment3/2-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-max(0,round(interim_aux$treatment4/2-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
@@ -286,7 +300,7 @@ for(i in 1:length(alpha)){
   interim_allocation_50<-rbind(interim_allocation_50,new_r)
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_50$alpha_posterior,beta_prior = df_alpha_beta_posteriors_50$beta_posterior, eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_50[,grep("q",colnames(df_q_andmu_posteriors_50)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
     if(any(is.na(interim_aux)))next
    interim_ss_rar50<-rbind(interim_ss_rar50,interim_aux)
   
@@ -295,7 +309,8 @@ for(i in 1:length(alpha)){
 colMeans(interim_ss_rar50)
 ```
 
-### Scenario 5 RAR
+### Scenario 25 RAR
+
 ```{r}
 interim_ss_rar25<-tibble()
 df_sample_size<-tibble()
@@ -313,18 +328,18 @@ interim_allocation_25<-tibble()
 
 
 for(i in 1:length(alpha)){
-  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.1)
+  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.6164384)
   if(any(is.na(aux)))next
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-round(aux$treatment2/4)
-  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=2.6, sd=7.4)
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -345,20 +360,20 @@ for(i in 1:length(alpha)){
   
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior ,beta_prior = df_alpha_beta_posteriors_25$beta_posterior, eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   if(any(is.na(interim_aux)))next
   interim_ss_rar25<-rbind(interim_ss_rar25,interim_aux)
   
 
   #Scenario 5
   length1<-max(0,round(interim_aux$treatment1*0.75-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-max(0,round(interim_aux$treatment2*0.75-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-max(0,round(interim_aux$treatment3*0.75-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-max(0,round(interim_aux$treatment4*0.75-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
@@ -379,7 +394,7 @@ for(i in 1:length(alpha)){
   interim_allocation_75<-rbind(interim_allocation_75,new_r)
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_75$alpha_posterior,beta_prior = df_alpha_beta_posteriors_75$beta_posterior, eta=0.95, zeta=0.90, 
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_75[,grep("q",colnames(df_q_andmu_posteriors_75)),]),
-                                       delta_star=0.1)
+                                       delta_star=0.6164384)
   if(any(is.na(interim_aux)))next
   
    interim_ss_rar75<-rbind(interim_ss_rar75,interim_aux)
@@ -388,7 +403,94 @@ for(i in 1:length(alpha)){
 }
 colMeans(interim_ss_rar75)
 ```
-### Scenario 5 no RAR
+
+### Scenario 24 no RAR
+
+```{r}
+interim_ss_25<-tibble()
+df_sample_size<-tibble()
+interim_ss_50<-tibble()
+df_q_andmu_posteriors_50<-tibble()
+df_alpha_beta_posteriors_50<-tibble()
+df_D_posteriors_50<-tibble()
+interim_allocation_50<-tibble()
+
+df_q_andmu_posteriors_25<-tibble()
+df_alpha_beta_posteriors_25<-tibble()
+df_D_posteriors_25<-tibble()
+interim_allocation_25<-tibble()
+
+
+
+for(i in 1:length(alpha)){
+  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.6164384)
+  if(any(is.na(aux)))next
+  df_sample_size<-rbind(df_sample_size,aux)
+  #Scenario 4
+  length1<-round(aux$treatment1/4)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  length2<-round(aux$treatment2/4)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  length3<-round(aux$treatment3/4)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  length4<-round(aux$treatment4/4)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  treatment_assignment<-c(rep(1,length1),rep(2,length2),
+                          rep(3,length3),rep(4,length4))
+  df_25=tibble(treatment_assignment,y)
+  
+  aux_post_25<-posterior_calculations(alpha_prior=alpha[i],beta_prior=beta[i],q_prior=c(1,1,1,1),mu_prior=c(0,0,0,0),
+                                   N_treat = c(length1,length2,length3,length4),
+                                   y_treatment = df_25)
+  
+  df_q_andmu_posteriors_25<-aux_post_25$q_andmu_posteriors
+  df_alpha_beta_posteriors_25<-aux_post_25$alpha_beta_params
+  df_D_posteriors_25<-aux_post_25$D
+
+  
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior ,beta_prior = df_alpha_beta_posteriors_25$beta_posterior, eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(0.25,0.25,0.25,0.25),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
+                                       delta_star=0.6164384)
+  if(any(is.na(interim_aux)))next
+  interim_ss_25<-rbind(interim_ss_25,interim_aux)
+  
+
+  #Scenario 4
+  length1<-max(0,round(interim_aux$treatment1/2-aux$treatment1/4))
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  length2<-max(0,round(interim_aux$treatment2/2-aux$treatment2/4))
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  length3<-max(0,round(interim_aux$treatment3/2-aux$treatment3/4))
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  length4<-max(0,round(interim_aux$treatment4/2-aux$treatment4/4))
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  
+  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
+  treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
+  df_50=tibble(treatment_assignment,y)
+  df<-rbind(df_25,df_50)
+  aux_post_50<-posterior_calculations(alpha_prior=alpha[i],beta_prior=beta[i],q_prior=c(1,1,1,1),mu_prior=c(0,0,0,0),
+                                   N_treat = c(max(round(aux$treatment1/4),round(interim_aux$treatment1/2)),
+                                               max(round(aux$treatment2/4),round(interim_aux$treatment2/2)),
+                                               max(round(aux$treatment3/4),round(interim_aux$treatment3/2)),
+                                               max(round(aux$treatment4/4),round(interim_aux$treatment4/2))),
+                                   y_treatment = df)
+  
+  df_q_andmu_posteriors_50<-aux_post_50$q_andmu_posteriors
+  df_alpha_beta_posteriors_50<-aux_post_50$alpha_beta_params
+  df_D_posteriors_50<-aux_post_50$D
+  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_50$alpha_posterior,beta_prior = df_alpha_beta_posteriors_50$beta_posterior, eta=0.95, zeta=0.90, 
+                                       xi=0.95,r=c(0.25,0.25,0.25,0.25),q_prior =as.numeric( df_q_andmu_posteriors_50[,grep("q",colnames(df_q_andmu_posteriors_50)),]),
+                                       delta_star=0.6164384)
+    if(any(is.na(interim_aux)))next
+   interim_ss_rar50<-rbind(interim_ss_50,interim_aux)
+  
+  
+}
+colMeans(interim_ss_50)
+```
+
+### Scenario 25 no RAR
 
 ```{r}
 interim_ss_25<-tibble()
@@ -407,18 +509,18 @@ interim_allocation_25<-tibble()
 
 
 for(i in 1:length(alpha)){
-  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.1)
+  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.6164384)
   if(any(is.na(aux)))next
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-round(aux$treatment2/4)
-  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
+  y4_aux=rnorm(round(aux$treatment4/4),mean=2.6, sd=7.4)
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -433,22 +535,23 @@ for(i in 1:length(alpha)){
   df_alpha_beta_posteriors_25<-aux_post_25$alpha_beta_params
   df_D_posteriors_25<-aux_post_25$D
   
+
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior ,beta_prior = df_alpha_beta_posteriors_25$beta_posterior, eta=0.95, zeta=0.90, 
-                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
+                                       xi=0.95,r=c(0.25,0.25,0.25,0.25),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
+                                       delta_star=0.6164384)
   if(any(is.na(interim_aux)))next
   interim_ss_25<-rbind(interim_ss_25,interim_aux)
   
 
   #Scenario 5
   length1<-max(0,round(interim_aux$treatment1*0.75-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=0, sd=1)
+  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
   length2<-max(0,round(interim_aux$treatment2*0.75-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
+  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
   length3<-max(0,round(interim_aux$treatment3*0.75-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
+  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
   length4<-max(0,round(interim_aux$treatment4*0.75-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
+  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
@@ -464,9 +567,10 @@ for(i in 1:length(alpha)){
   df_q_andmu_posteriors_75<-aux_post_75$q_andmu_posteriors
   df_alpha_beta_posteriors_75<-aux_post_75$alpha_beta_params
   df_D_posteriors_75<-aux_post_75$D
+
   interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_75$alpha_posterior,beta_prior = df_alpha_beta_posteriors_75$beta_posterior, eta=0.95, zeta=0.90, 
-                                       xi=0.95,r=c(1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_75[,grep("q",colnames(df_q_andmu_posteriors_75)),]),
-                                       delta_star=0.1)
+                                       xi=0.95,r=c(0.25,0.25,0.25,0.25),q_prior =as.numeric( df_q_andmu_posteriors_75[,grep("q",colnames(df_q_andmu_posteriors_75)),]),
+                                       delta_star=0.6164384)
   if(any(is.na(interim_aux)))next
   
    interim_ss_75<-rbind(interim_ss_75,interim_aux)
@@ -475,94 +579,3 @@ for(i in 1:length(alpha)){
 }
 colMeans(interim_ss_75)
 ```
-
-### Scenario 4 no RAR
-
-```{r}
-{r}
-interim_ss_25<-tibble()
-df_sample_size<-tibble()
-interim_ss_50<-tibble()
-df_q_andmu_posteriors_50<-tibble()
-df_alpha_beta_posteriors_50<-tibble()
-df_D_posteriors_50<-tibble()
-interim_allocation_50<-tibble()
-
-df_q_andmu_posteriors_25<-tibble()
-df_alpha_beta_posteriors_25<-tibble()
-df_D_posteriors_25<-tibble()
-interim_allocation_25<-tibble()
-
-
-
-for(i in 1:length(alpha)){
-  aux<-sample_size_calculation(alpha_prior = alpha[i],beta_prior = beta[i], eta=0.95, zeta=0.90, xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior=c(1,1,1,1),delta_star=0.1)
-  if(any(is.na(aux)))next
-  df_sample_size<-rbind(df_sample_size,aux)
-  #Scenario 4
-  length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=0, sd=1)
-  length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
-  length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
-  length4<-round(aux$treatment2/4)
-  y4_aux=rnorm(round(aux$treatment4/4),mean=0.6, sd=1)
-  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
-  
-  treatment_assignment<-c(rep(1,length1),rep(2,length2),
-                          rep(3,length3),rep(4,length4))
-  df_25=tibble(treatment_assignment,y)
-  
-  aux_post_25<-posterior_calculations(alpha_prior=alpha[i],beta_prior=beta[i],q_prior=c(1,1,1,1),mu_prior=c(0,0,0,0),
-                                   N_treat = c(length1,length2,length3,length4),
-                                   y_treatment = df_25)
-  
-  df_q_andmu_posteriors_25<-aux_post_25$q_andmu_posteriors
-  df_alpha_beta_posteriors_25<-aux_post_25$alpha_beta_params
-  df_D_posteriors_25<-aux_post_25$D
-
-  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_25$alpha_posterior ,beta_prior = df_alpha_beta_posteriors_25$beta_posterior, eta=0.95, zeta=0.90, 
-                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
-                                       delta_star=0.1)
-  if(any(is.na(interim_aux)))next
-  interim_ss_25<-rbind(interim_ss_25,interim_aux)
-  
-
-  #Scenario 4
-  length1<-max(0,round(interim_aux$treatment1/2-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=0, sd=1)
-  length2<-max(0,round(interim_aux$treatment2/2-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.1, sd=1)
-  length3<-max(0,round(interim_aux$treatment3/2-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=0.2, sd=1)
-  length4<-max(0,round(interim_aux$treatment4/2-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=0.6, sd=1)
-  
-  y=c(y1_aux,y2_aux,y3_aux,y4_aux)
-  treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
-  df_50=tibble(treatment_assignment,y)
-  df<-rbind(df_25,df_50)
-  aux_post_50<-posterior_calculations(alpha_prior=alpha[i],beta_prior=beta[i],q_prior=c(1,1,1,1),mu_prior=c(0,0,0,0),
-                                   N_treat = c(max(round(aux$treatment1/4),round(interim_aux$treatment1/2)),
-                                               max(round(aux$treatment2/4),round(interim_aux$treatment2/2)),
-                                               max(round(aux$treatment3/4),round(interim_aux$treatment3/2)),
-                                               max(round(aux$treatment4/4),round(interim_aux$treatment4/2))),
-                                   y_treatment = df)
-  
-  df_q_andmu_posteriors_50<-aux_post_50$q_andmu_posteriors
-  df_alpha_beta_posteriors_50<-aux_post_50$alpha_beta_params
-  df_D_posteriors_50<-aux_post_50$D
-
-  interim_aux<-sample_size_calculation(alpha_prior =df_alpha_beta_posteriors_50$alpha_posterior,beta_prior = df_alpha_beta_posteriors_50$beta_posterior, eta=0.95, zeta=0.90, 
-                                       xi=0.95,r=c(1/4,1/4,1/4,1/4),q_prior =as.numeric( df_q_andmu_posteriors_50[,grep("q",colnames(df_q_andmu_posteriors_50)),]),
-                                       delta_star=0.1)
-    if(any(is.na(interim_aux)))next
-   interim_ss_50<-rbind(interim_ss_50,interim_aux)
-  
-  
-}
-colMeans(interim_ss50)
-```
-
-

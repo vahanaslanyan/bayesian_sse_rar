@@ -6,7 +6,7 @@ set.seed(219)
 sample_size_calculation <- function(alpha_prior=1, beta_prior=49, eta=0.95, zeta=0.90, 
                                     xi=0.95,r=c(1/3,1/6,1/6,1/6,1/6),q_prior=c(10,2,2,2,2),delta_star=5) {
   # Counter  
-  for (n in 1:10000) {
+  for (n in 1:100000) {
     # Calculated sample size
     N_treat<-n*r            
     # Posterior alpha
@@ -40,7 +40,7 @@ sample_size_calculation <- function(alpha_prior=1, beta_prior=49, eta=0.95, zeta
       results<-as.data.frame(t(results))
       break
       break
-    }else if (n==10000){
+    }else if (n==100000){
       results<-rep(NA,length(r))
       names(results)<-c(paste0("treatment", seq_along(N_treat)))
       results<-as.data.frame(t(results))
