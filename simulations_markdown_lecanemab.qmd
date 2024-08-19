@@ -296,7 +296,7 @@ for(i in 1:length(alpha)){
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_50[,grep("q",colnames(df_q_andmu_posteriors_50)),]),
                                        delta_star=0.373)
     if(any(is.na(interim_aux50)))next
-  interim_ss_rar50<-interim_aux50+sample_sizes_before50
+  interim_aux<-interim_aux50+sample_sizes_before50
    interim_ss_rar50<-rbind(interim_ss_rar50,interim_aux)
   
   

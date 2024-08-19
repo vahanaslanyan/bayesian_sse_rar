@@ -44,13 +44,13 @@ for(i in 1:length(alpha)){
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 1
   length1<-round(aux$treatment1/2)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/2)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/2)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/2)
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -71,13 +71,13 @@ for(i in 1:length(alpha)){
   #Scenario 2
   
  length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/4)
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -100,13 +100,13 @@ for(i in 1:length(alpha)){
   #Scenario 3
   
  length1<-round(aux$treatment1/8)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/8)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/8)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/8)
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -217,7 +217,7 @@ for(i in 1:nrow(df_alpha_beta_posteriors_125)){
 colMeans(interim_ss_rar125,na.rm = T)+colMeans(df_sample_size)/2
 ```
 
-###  Scenario 24 RAR
+### Scenario 24 RAR
 
 ```{r}
 interim_ss_rar25<-tibble()
@@ -241,13 +241,13 @@ for(i in 1:length(alpha)){
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/4)
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
                           rep(3,length3),rep(4,length4))
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
@@ -267,34 +267,36 @@ for(i in 1:length(alpha)){
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
                                        delta_star=4.5)
   if(any(is.na(interim_aux)))next
-  interim_aux<-interim_aux+aux/4
+
+  recruited_so_far<-aux/4
+  interim_aux<-interim_aux+recruited_so_far
   interim_ss_rar25<-rbind(interim_ss_rar25,interim_aux)
   
 
   #Scenario 4
   length1<-max(0,round((interim_aux$treatment1)/2-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-max(0,round((interim_aux$treatment2)/2-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-max(0,round((interim_aux$treatment3)/2-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-max(0,round((interim_aux$treatment4)/2-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
   df_50=tibble(treatment_assignment,y)
   df<-rbind(df_25,df_50)
+  recruited_so_far<-recruited_so_far+c(length1,length2,length3,length4)
   aux_post_50<-posterior_calculations(alpha_prior=df_alpha_beta_posteriors_25$alpha_posterior,
                                       beta_prior=df_alpha_beta_posteriors_25$beta_posterior,
                                       q_prior=as.numeric( df_q_andmu_posteriors_25[,grep("q",colnames(df_q_andmu_posteriors_25)),]),
                                       mu_prior=as.numeric( df_q_andmu_posteriors_25[,grep("mu",colnames(df_q_andmu_posteriors_25)),]),
-                                   N_treat = c(round(interim_aux$treatment1/2),
-                                              round(interim_aux$treatment2/2),
-                                              round(interim_aux$treatment3/2),
-                                              round(interim_aux$treatment4/2)),
+                                   N_treat = c(round(aux$treatment1/4+length1),
+                                              round(aux$treatment2/4+length2),
+                                              round(aux$treatment3/4+length3),
+                                              round(aux$treatment1/4+length4)),
                                    y_treatment = df)
-  sample_sizes_before50<-interim_aux*0.5
   df_q_andmu_posteriors_50<-aux_post_50$q_andmu_posteriors
   df_alpha_beta_posteriors_50<-aux_post_50$alpha_beta_params
   df_D_posteriors_50<-aux_post_50$D
@@ -305,9 +307,8 @@ for(i in 1:length(alpha)){
                                        xi=0.95,r=as.numeric(new_r),q_prior =as.numeric( df_q_andmu_posteriors_50[,grep("q",colnames(df_q_andmu_posteriors_50)),]),
                                        delta_star=4.5)
     if(any(is.na(interim_aux)))next
-    interim_ss_rar50<-interim_aux+sample_sizes_before50
+    interim_aux<-interim_aux+recruited_so_far
     interim_ss_rar50<-rbind(interim_ss_rar50,interim_aux)
-  
   
 }
 colMeans(interim_ss_rar50)
@@ -337,13 +338,13 @@ for(i in 1:length(alpha)){
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/4)
-  y4_aux=rnorm(round(aux$treatment4/4),mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -372,13 +373,13 @@ for(i in 1:length(alpha)){
 
   #Scenario 5
   length1<-max(0,round((interim_aux$treatment1)*0.75-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-max(0,round((interim_aux$treatment2)*0.75-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-max(0,round((interim_aux$treatment3)*0.75-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-max(0,round((interim_aux$treatment4)*0.75-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
@@ -434,13 +435,13 @@ for(i in 1:length(alpha)){
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/4)
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
                           rep(3,length3),rep(4,length4))
@@ -465,13 +466,13 @@ for(i in 1:length(alpha)){
 
   #Scenario 4
   length1<-max(0,round((interim_aux$treatment1)/2-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-max(0,round((interim_aux$treatment2)/2-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-max(0,round((interim_aux$treatment3)/2-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-max(0,round((interim_aux$treatment4)/2-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
@@ -528,13 +529,13 @@ for(i in 1:length(alpha)){
   df_sample_size<-rbind(df_sample_size,aux)
   #Scenario 4
   length1<-round(aux$treatment1/4)
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-round(aux$treatment2/4)
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-round(aux$treatment3/4)
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-round(aux$treatment4/4)
-  y4_aux=rnorm(round(aux$treatment4/4),mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   
   treatment_assignment<-c(rep(1,length1),rep(2,length2),
@@ -560,13 +561,13 @@ for(i in 1:length(alpha)){
 
   #Scenario 5
   length1<-max(0,round((interim_aux$treatment1)*0.75-aux$treatment1/4))
-  y1_aux=rnorm(length1,mean=1.7, sd=6.9)
+  y1_aux=rnorm(length1,mean=-1.7, sd=6.9)
   length2<-max(0,round((interim_aux$treatment2)*0.75-aux$treatment2/4))
-  y2_aux=rnorm(length2,mean=0.2, sd=6.7)
+  y2_aux=rnorm(length2,mean=-0.2, sd=6.7)
   length3<-max(0,round((interim_aux$treatment3)*0.75-aux$treatment3/4))
-  y3_aux=rnorm(length3,mean=1.4, sd=6.6)
+  y3_aux=rnorm(length3,mean=-1.4, sd=6.6)
   length4<-max(0,round((interim_aux$treatment4)*0.75-aux$treatment4/4))
-  y4_aux=rnorm(length4,mean=2.6, sd=7.4)
+  y4_aux=rnorm(length4,mean=-2.6, sd=7.4)
   y=c(y1_aux,y2_aux,y3_aux,y4_aux)
   treatment_assignment<-c(rep(1,length1),rep(2,length2),rep(3,length3),rep(4,length4))
   df_75=tibble(treatment_assignment,y)
