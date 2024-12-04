@@ -2,6 +2,17 @@ library(ggplot2)
 library(tidyverse)
 library(ggpubr)
 library(ggsci)
+
+MyTheme_transparent <- theme(
+  panel.background = element_rect(fill = "transparent"), # bg of the panel
+  plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
+  panel.grid.major = element_blank(), # get rid of major grid
+  panel.grid.minor = element_blank(), # get rid of minor grid
+  legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+  legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+  legend.key = element_rect(fill = "transparent", colour = NA), # get rid of key legend fill, and of the surrounding
+  axis.line = element_line(colour = "black") # adding a black line for x and y axis
+)
 setwd("/Users/vahanaslanyan/Documents/bayesian_sse_rar/bayesian_sse_rar/misc files/")
 df1<-read_csv("changing_delta_no_interim_analysis.csv")
 df1$Total_participants<-df1$treatment1+df1$treatment2+
@@ -36,7 +47,7 @@ ggplot(summary_delta_no_rar50_plot,aes(x=delta,y=total_participants))+geom_point
 master_dataset<-rbind(summary_delta_no_interim,summary_delta_no_rar_50)
 ggplot(master_dataset,aes(x=delta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
   labs(color="Interim Analysis")
 
 df3<-read_csv("changing_delta_no_rar_interim_analysis25.csv")
@@ -105,24 +116,27 @@ master_dataset<-rbind(master_dataset,df_nhst)
 p1<-ggplot(master_dataset,aes(x=delta,y=total_participants,color=method))+
   geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
+  scale_x_continuous(limits = c(0, NA))+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 
 
 master_dataset_small_delta<-master_dataset%>%filter(delta<=0.25)
 
-master_dataset_large_delta<-master_dataset%>%filter(delta>0.25)
+master_dataset_large_delta<-master_dataset%>%filter(delta>=0.25)
 
 p2<-ggplot(master_dataset_small_delta,aes(x=delta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
+  scale_x_continuous(limits = c(0.05, NA))+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 p3<-ggplot(master_dataset_large_delta,aes(x=delta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
+  scale_x_continuous(limits = c(0.25, NA),breaks = seq(0.25,1,0.1))+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 
 
@@ -212,24 +226,27 @@ master_dataset_rar<-rbind(master_dataset_rar,df_nhst)
 
 p4<-ggplot(master_dataset_rar,aes(x=delta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
+  scale_x_continuous(limits = c(0, NA))+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 
 
 master_dataset_small_delta_rar<-master_dataset_rar%>%filter(delta<=0.25)
 
-master_dataset_large_delta_rar<-master_dataset_rar%>%filter(delta>0.25)
+master_dataset_large_delta_rar<-master_dataset_rar%>%filter(delta>=0.25)
 
 p5<-ggplot(master_dataset_small_delta_rar,aes(x=delta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
+  scale_x_continuous(limits = c(0.05, NA))+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 p6<-ggplot(master_dataset_large_delta_rar,aes(x=delta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("δ*")+theme(text = element_text(size=36))+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Clinically Important Effect (δ*)")+theme(text = element_text(size=36))+
+  scale_x_continuous(limits = c(0.25, NA),breaks = seq(0.25,1,0.1))+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 
 #########Change eta
@@ -331,8 +348,8 @@ master_dataset_eta<-rbind(master_dataset_eta,summary_eta_no_rar_25_75)
 
 p7<-ggplot(master_dataset_eta,aes(x=eta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("η")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
-  labs(color="Interim Analysis") +scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Success Threshold (η)")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
+  labs(color="Interim Analysis") +scale_color_jama()+MyTheme_transparent
 
 ###RAR
 
@@ -420,8 +437,8 @@ library(ggsci)
 
 p8<-ggplot(master_dataset_eta_rar,aes(x=eta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("η")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
-  labs(color="Interim Analysis")+scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Success Threshold (η)")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
+  labs(color="Interim Analysis")+scale_color_jama()+MyTheme_transparent
 
 
 #########Change zeta
@@ -459,7 +476,7 @@ ggplot(summary_zeta_no_rar50_plot,aes(x=zeta,y=total_participants))+geom_point(s
 master_dataset_zeta<-rbind(summary_zeta_no_interim,summary_zeta_no_rar_50)
 ggplot(master_dataset_zeta,aes(x=zeta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("ζ")+theme(text = element_text(size=36))+
+  theme(legend.position = "bottom")+xlab("Futility threshold (ζ)")+theme(text = element_text(size=36))+
   labs(color="Interim Analysis")
 
 df25<-read_csv("changing_zeta_no_rar_interim_analysis25.csv")
@@ -523,8 +540,8 @@ master_dataset_zeta<-rbind(master_dataset_zeta,summary_zeta_no_rar_25_75)
 
 p9<-ggplot(master_dataset_zeta,aes(x=zeta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("ζ")+theme(text = element_text(size=36))+geom_vline(xintercept =0.90,linetype="dashed",color="gray")+
-  labs(color="Interim Analysis")+scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Futility Threshold (ζ)")+theme(text = element_text(size=36))+geom_vline(xintercept =0.90,linetype="dashed",color="gray")+
+  labs(color="Interim Analysis")+scale_color_jama()+MyTheme_transparent
 
 ###RAR
 
@@ -612,8 +629,8 @@ ggplot(master_dataset_zeta_rar,aes(x=zeta,y=total_participants,color=method))+ge
 
 p10<-ggplot(master_dataset_zeta_rar,aes(x=zeta,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("ζ")+theme(text = element_text(size=36))+geom_vline(xintercept =0.90,linetype="dashed",color="gray")+
-  labs(color="Interim Analysis")+scale_color_jama() 
+  theme(legend.position = "bottom")+xlab("Futility Threshold (ζ)")+theme(text = element_text(size=36))+geom_vline(xintercept =0.90,linetype="dashed",color="gray")+
+  labs(color="Interim Analysis")+scale_color_jama()+MyTheme_transparent
 
 
 
@@ -715,8 +732,8 @@ master_dataset_xi<-rbind(master_dataset_xi,summary_xi_no_rar_25_75)
 
 p11<-ggplot(master_dataset_xi,aes(x=xi,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("ξ")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
-  labs(color="Interim Analysis")+scale_color_jama()
+  theme(legend.position = "bottom")+xlab("Conclusiveness Threshold (ξ)")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
+  labs(color="Interim Analysis")+scale_color_jama()+MyTheme_transparent
 
 ###RAR
 
@@ -804,8 +821,8 @@ ggplot(master_dataset_xi_rar,aes(x=xi,y=total_participants,color=method))+geom_p
 
 p12<-ggplot(master_dataset_xi_rar,aes(x=xi,y=total_participants,color=method))+geom_point(size=1.5)+geom_line(size=1.5)+theme_classic()+
   ylab("Total Number of Participants")+
-  theme(legend.position = "bottom")+xlab("ξ")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
-  labs(color="Interim Analysis")+scale_color_jama() 
+  theme(legend.position = "bottom")+xlab("Conclusiveness Threshold (ξ)")+theme(text = element_text(size=36))+geom_vline(xintercept =0.95,linetype="dashed",color="gray")+
+  labs(color="Interim Analysis")+scale_color_jama()+MyTheme_transparent 
 
 
 
@@ -813,12 +830,12 @@ p12<-ggplot(master_dataset_xi_rar,aes(x=xi,y=total_participants,color=method))+g
 
 p13<-ggarrange(p1,p2,p3,p4,p5,p6, nrow=2,ncol=3, common.legend = T, legend="bottom",labels = "AUTO",
           font.label=list(color="black",size=36))                 
-ggsave("Delta_stars0902.svg",p13,height = 20,width = 36,dpi=600)
+#ggsave("Delta_stars1008.png",p13,bg = "transparent",height = 20,width = 36,dpi=600)
 #ggsave("Delta_stars0814.png",p13,height = 20,width = 36,dpi=600)
 
-p14<-ggarrange(  p7,p9,p11,p8,p10,p12,nrow=2,ncol=3, common.legend = T, legend="bottom",labels = "AUTO",
+p14<-ggarrange( p7,p9,p11,p8,p10,p12,nrow=2,ncol=3, common.legend = T, legend="bottom",labels = "AUTO",
                font.label=list(color="black",size=36))             
 
-ggsave("eta_zeta_xi08902.svg",p14,height = 20,width = 36,dpi=600)
+ggsave("eta_zeta_xi1008.png",p14,bg = "transparent",height = 20,width = 36,dpi=600)
 #ggsave("eta_zeta_xi0814.png",p14,height = 20,width = 36,dpi=600)
 
