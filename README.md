@@ -9,7 +9,7 @@ Change directories as needed, but keep all the files in the same directory.
 Clone this repo into your  desired directory
 
 ```
-git close git@github.com:vahanaslanyan/bayesian_sse_rar.git
+git clone git@github.com:vahanaslanyan/bayesian_sse_rar.git
 ```
 ## Figures 1 and 2
 1. Execute `simulations_delta.R`. This will give create 8 csv files with names starting with `changing_delta*`. 
